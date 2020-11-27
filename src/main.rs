@@ -19,7 +19,13 @@ fn main() {
         }
         return;
     }
-    match start(args.nth(1).unwrap(), args.nth(2).unwrap()) {
+
+    let bind = args.nth(1).unwrap();
+    let redirect = args.nth(0).unwrap();
+
+    println!("Proxying {} to {}", bind, redirect);
+
+    match start(bind, redirect) {
         Ok(_) => (),
         Err(err) => println!("{}", err),
     }

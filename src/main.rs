@@ -6,28 +6,36 @@ use std::{
     thread,
 };
 
-const BIND: &str = "0.0.0.0:1337";
-const REDIRECT: &str = "127.0.0.1:3389";
 const BUFFER_SIZE: usize = 1024;
 
 fn main() {
-    match start() {
+    let mut args = std::env::args();
+    if args.len() < 3 {
+        let cmd = args.nth(0);
+        if cmd.is_some() {
+            println!("Usage: {} <bind_addr> <redirect_addr>", cmd.unwrap());
+        } else {
+            println!("Usage: proxy <bind_addr> <redirect_addr>");
+        }
+        return;
+    }
+    match start(args.nth(1).unwrap(), args.nth(2).unwrap()) {
         Ok(_) => (),
         Err(err) => println!("{}", err),
     }
 }
 
-fn start() -> Result<(), Error> {
-    let listener = TcpListener::bind(BIND)?;
+fn start(bind: String, redirect: String) -> Result<(), Error> {
+    let listener = TcpListener::bind(bind)?;
     for incoming in listener.incoming() {
-        thread::spawn(move || handle_conn(incoming?));
+        let redirect = TcpStream::connect(&redirect);
+        thread::spawn(move || handle_conn(incoming?, redirect?));
     }
     Ok(())
 }
 
-fn handle_conn(stream: TcpStream) -> Result<(), Error> {
+fn handle_conn(stream: TcpStream, redirect: TcpStream) -> Result<(), Error> {
     println!("Incoming connection...");
-    let redirect = TcpStream::connect(REDIRECT)?;
     let connections = vec![
         pipe_stream(stream.try_clone()?, redirect.try_clone()?),
         pipe_stream(redirect.try_clone()?, stream.try_clone()?),

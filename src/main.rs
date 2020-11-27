@@ -29,11 +29,14 @@ fn handle_conn(stream: TcpStream) -> Result<(), Error> {
     println!("Incoming connection...");
     let redirect = TcpStream::connect(REDIRECT)?;
     let connections = vec![
-        pipe_stream(stream.try_clone().unwrap(), redirect.try_clone().unwrap()),
-        pipe_stream(redirect.try_clone().unwrap(), stream.try_clone().unwrap()),
+        pipe_stream(stream.try_clone()?, redirect.try_clone()?),
+        pipe_stream(redirect.try_clone()?, stream.try_clone()?),
     ];
     for connection in connections {
-        connection.join().unwrap();
+        match connection.join() {
+            Ok(_) => (),
+            Err(_) => println!("There was an internal error joining threads..."),
+        }
     }
     Ok(())
 }
